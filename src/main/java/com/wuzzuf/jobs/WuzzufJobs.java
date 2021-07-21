@@ -5,8 +5,13 @@
  */
 package com.wuzzuf.jobs;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.sql.DataFrameReader;
 import org.apache.spark.sql.Dataset;
@@ -14,7 +19,6 @@ import org.apache.spark.sql.Row;
 import org.apache.spark.sql.SparkSession;
 import org.apache.log4j.Logger;
 import org.apache.log4j.Level;
-import static org.apache.spark.sql.functions.col;
 
 /**
  *
@@ -81,32 +85,65 @@ public final class WuzzufJobs implements DAOJobs {
     public void show(int n) {
         df.show(n);
     }
+    
+    private List<List<Object>> helperMap(JavaRDD<String> input) {
+        Map<String, Long> wordCounts = input.countByValue();
+        List<Map.Entry> sorted = wordCounts.entrySet()
+                .stream()
+                .sorted(Map.Entry.comparingByValue(Comparator.reverseOrder()))
+                .collect (Collectors.toList());
+        List<List<Object>> result = new ArrayList<>();
+        for(Map.Entry<String, Long> entry : sorted) 
+        {
+            List<Object> lst = new ArrayList<>();
+            lst.add(entry.getKey());
+            lst.add(entry.getValue());
+            result.add(lst);
+        }
+        return result;
+}
 
     @Override
     public List<List<Object>> jobsPerCompany() {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+        return helperMap(jobsRDD.map(j -> j.getCompany()));
     }
 
     @Override
     public List<List<Object>> mostJobTitles() {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+        return helperMap(jobsRDD.map(j -> j.getTitle()));
     }
 
     @Override
     public List<List<Object>> mostPopularAreas() {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+        return helperMap(jobsRDD.map(j -> j.getLocation()));
     }
 
     @Override
-    public Map<String, Integer> getSkillList() {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    public List<Map.Entry<String, Long>> getSkillList() {
+        JavaRDD<String> skills = jobsRDD.map(j -> j.getSkills());                                  
+        JavaRDD<String> words = skills.
+                flatMap (title -> Arrays.asList (title
+                                                .toLowerCase ()
+                                                .trim()
+                                                .split ("\\s*\\p{Punct}\\s*"))
+                                                .iterator())
+                                                .filter(StringUtils::isNotBlank);
+        return words.countByValue()
+                .entrySet()
+                .stream()
+                .sorted(Map.Entry.comparingByValue(Comparator.reverseOrder()))
+                .collect (Collectors.toList());
     }
     
     @Override
     public void CreatMinYearsExp() {
         jobsRDD.foreach(j -> j.setMinYear(Utilities.minYear(j.getYearsExp())));
         df = sparkSession.createDataFrame(jobsRDD, Job.class);
+    }
 
+    @Override
+    public long size() {
+        return jobsRDD.count();
     }
     
 }

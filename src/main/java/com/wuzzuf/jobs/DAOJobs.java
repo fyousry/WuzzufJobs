@@ -19,11 +19,12 @@ public interface DAOJobs {
     public void clean();
     public JavaRDD<Job> getJobs();
     public List<Job> getJobs(int n);
+    public long size();
     public Dataset<Row> summary();
     public void show(int n);
     public List<List<Object>> jobsPerCompany();
     public List<List<Object>> mostJobTitles();
     public List<List<Object>> mostPopularAreas();
-    public Map<String, Integer> getSkillList();
+    public List<Map.Entry<String, Long>> getSkillList();
     public void CreatMinYearsExp();
 }

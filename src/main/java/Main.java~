@@ -32,12 +32,11 @@ public class Main {
             System.out.println(s);
         });
         List<List<Object>> res = data.jobsPerCompany();
-        System.out.println(res);
+        System.out.print(res);
         res = data.mostJobTitles();
-        System.out.println(res);
+        System.out.print(res);
         res = data.mostPopularAreas();
-        System.out.println(res);
-        List<Map.Entry<String, Long>> map = data.getSkillList();
-        map.forEach(i -> System.out.println(i.getKey() + " : " + i.getValue())); 
+        System.out.print(res);
+        Map<String, Long> map = data.getSkillList();
     }
 }
